@@ -4,9 +4,11 @@ public class ThrowObject : MonoBehaviour
 {
     public Animator animator;
     public GameObject projectilePrefab; // Prefab del proyectil (Tomate)
+    public Transform throwPoint;       // ¡El Empty Object para la posición de instanciación!
 
-    [Header("Ajustes de Aparición")]
-    public float spawnDistance = 5f; // Distancia delante de la cámara donde aparecerá el tomate.
+    [Header("Ajustes de Impulso")]
+    public float forwardForce = 15f; // Fuerza en la dirección de la cámara
+    public float verticalLift = 3f;  // Fuerza hacia arriba (para el arco)
 
     // Referencia a la cámara principal
     private Camera mainCamera;
@@ -30,7 +32,6 @@ public class ThrowObject : MonoBehaviour
                 animator.SetTrigger("Throw");
             }
 
-            // Llama a la función para instanciar el proyectil
             LaunchProjectile();
         }
     }
@@ -42,28 +43,35 @@ public class ThrowObject : MonoBehaviour
             return;
         }
 
-        // 1. Calcular la posición de aparición: Posición de la cámara + dirección de la cámara * distancia
-        // Esto asegura que aparece a 5 unidades (o el valor de spawnDistance) delante de donde mira la cámara.
-        Vector3 spawnPosition = mainCamera.transform.position + mainCamera.transform.forward * spawnDistance;
+        if (throwPoint == null)
+        {
+            Debug.LogError("El ThrowPoint no está asignado. ¡Arrastra un Empty Object al inspector!", this);
+            return;
+        }
 
-        // Instanciar el proyectil en esa posición y con la rotación de la cámara.
-        GameObject projectile = Instantiate(projectilePrefab, spawnPosition, mainCamera.transform.rotation);
+        // 1. Instanciar el proyectil en la posición y rotación del ThrowPoint
+        // La rotación se mantiene para que el proyectil pueda tener una orientación inicial
+        GameObject projectile = Instantiate(projectilePrefab, throwPoint.position, throwPoint.rotation);
 
         // 2. Obtener el Rigidbody
         Rigidbody rb = projectile.GetComponent<Rigidbody>();
 
         if (rb != null)
         {
-            // Importante: Aseguramos que el Rigidbody está activo y no es cinemático
-            // para que la gravedad actúe sobre él inmediatamente.
-            rb.isKinematic = false;
+            // 3. Calcular la dirección y el impulso
 
-            // Ya NO aplicamos fuerza (AddForce), solo se crea y cae.
-            // La gravedad de Unity (editada en Project Settings > Physics) se encargará de esto.
+            // Vector Principal: Usa la dirección "adelante" de la CÁMARA.
+            Vector3 cameraForwardImpulse = mainCamera.transform.forward * forwardForce;
+
+            // Vector Vertical: Añade la elevación.
+            Vector3 upwardImpulse = Vector3.up * verticalLift; // Vector3.up es el eje Y global.
+
+            // 4. Aplicar la fuerza combinada como un impulso
+            rb.AddForce(cameraForwardImpulse + upwardImpulse, ForceMode.Impulse);
         }
         else
         {
-            Debug.LogError("El prefab del proyectil no tiene un Rigidbody adjunto. La gravedad no funcionará.", projectile);
+            Debug.LogError("El prefab del proyectil NO tiene un Rigidbody adjunto. La física no funcionará.", projectile);
         }
     }
 }
