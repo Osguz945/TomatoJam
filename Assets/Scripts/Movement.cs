@@ -15,11 +15,6 @@ public class Movement : MonoBehaviour
         // Si 'isMoveable' es false, salimos de la función inmediatamente.
         if (!isMoveable) return;
 
-
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            moveSpeed = 15f;
-        }
         // 1. Obtener la entrada del usuario para los ejes de movimiento
         // El eje "Horizontal" corresponde a A y D
         float x = Input.GetAxis("Horizontal");
